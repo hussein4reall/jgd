@@ -76,6 +76,9 @@ export const translations = {
     postComment: 'Post',
     noCommentsYet: 'No comments yet. Be the first to react!',
     linkCopied: 'Clip link copied to clipboard!',
+    fullView: 'Full Video',
+    fillView: 'Fill Screen',
+    fitMode: 'Display Mode',
 
     // Five Seasons Hub
     seasonsHubTitle: 'The 5 Seasons of Creativity',
@@ -358,6 +361,9 @@ export const translations = {
     postComment: 'نشر',
     noCommentsYet: 'لا توجد تعليقات بعد. كن أول من يعلق!',
     linkCopied: 'تم نسخ رابط المقطع إلى الحافظة!',
+    fullView: 'عرض كامل',
+    fillView: 'ملء الشاشة',
+    fitMode: 'نمط العرض',
 
     // Five Seasons Hub
     seasonsHubTitle: 'فصول الإبداع الخمسة',

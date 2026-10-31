@@ -23,93 +23,116 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   const t = translations[language];
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-40 px-2 sm:px-4 md:px-8 pb-2 sm:pb-3 md:pb-6 pointer-events-none">
+    <div className="fixed bottom-0 inset-x-0 z-40 px-2 sm:px-4 md:px-8 pb-2 sm:pb-3 pointer-events-none">
       <nav
         id="bottom-nav-bar"
-        className="pointer-events-auto max-w-4xl mx-auto h-16 md:h-18 bg-[#090914]/90 backdrop-blur-2xl border border-white/10 rounded-3xl flex items-center justify-around px-2 sm:px-4 md:px-8 text-white select-none shadow-[0_10px_40px_rgba(0,0,0,0.8)]"
+        aria-label="Main Navigation"
+        className="pointer-events-auto max-w-lg mx-auto px-3 py-1.5 rounded-full select-none shadow-2xl"
+        style={{
+          background: 'linear-gradient(135deg, rgba(235, 240, 248, 0.16), rgba(210, 218, 228, 0.22))',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          borderColor: 'rgba(147, 197, 253, 0.55) rgba(255, 255, 255, 0.25) rgba(255, 255, 255, 0.25)',
+          boxShadow: 'rgba(0, 0, 0, 0.37) 0px 8px 32px 0px, rgba(255, 255, 255, 0.45) 0px 1px 1px 0px inset, rgba(59, 130, 246, 0.35) 0px 0px 16px -2px',
+        }}
         dir={language === 'ar' ? 'rtl' : 'ltr'}
       >
-        {/* 1. Clips Feed Tab */}
-        <button
-          id="nav-tab-feed"
-          onClick={() => onTabChange('feed')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${
-            activeTab === 'feed'
-              ? 'text-indigo-400 font-bold scale-105'
-              : 'text-white/40 hover:text-white/80'
-          }`}
-        >
-          <Film className={`w-5 h-5 ${activeTab === 'feed' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10px] tracking-tight">{t.clips}</span>
-        </button>
-
-        {/* 2. Search Tab */}
-        <button
-          id="nav-tab-search"
-          onClick={() => onTabChange('search')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${
-            activeTab === 'search'
-              ? 'text-indigo-400 font-bold scale-105'
-              : 'text-white/40 hover:text-white/80'
-          }`}
-        >
-          <Search className={`w-5 h-5 ${activeTab === 'search' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10px] tracking-tight">{t.searchTabTop}</span>
-        </button>
-
-        {/* 3. Center Camera Studio Plus Button */}
-        <div className="relative -mt-6 flex items-center justify-center">
+        <div className="flex items-center justify-between max-w-full mx-auto">
+          {/* Tab 1: Clips Feed */}
           <button
-            id="nav-tab-camera-plus"
-            onClick={onOpenStudio}
-            className="w-12 h-12 md:w-14 md:h-14 rounded-2xl btn-purple flex items-center justify-center text-white shadow-xl shadow-indigo-950/70 transform hover:scale-110 active:scale-95 transition-all border border-white/20"
-            aria-label={t.studio}
+            id="nav-tab-feed"
+            onClick={() => onTabChange('feed')}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition group ${
+              activeTab === 'feed'
+                ? 'text-purple-400 font-bold'
+                : 'text-gray-400 hover:text-white'
+            }`}
           >
-            <Plus className="w-6 h-6 md:w-7 md:h-7 stroke-[2.5]" />
+            <Film className="w-4 h-4 stroke-[2.2] group-hover:scale-110 transition-transform" />
+            <span className="text-[9px] font-bold mt-1 tracking-tight">
+              {t.clips || 'Clips'}
+            </span>
+          </button>
+
+          {/* Tab 2: Top / Discover */}
+          <button
+            id="nav-tab-search"
+            onClick={() => onTabChange('search')}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition group ${
+              activeTab === 'search'
+                ? 'text-purple-400 font-bold'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Search className="w-4 h-4 stroke-[2] group-hover:scale-110 transition-transform" />
+            <span className="text-[9px] font-medium mt-1 tracking-tight">
+              {language === 'ar' ? 'استكشف' : 'Top'}
+            </span>
+          </button>
+
+          {/* Center: Plus Button (Studio) */}
+          <div className="flex items-center justify-center px-1.5 sm:px-2">
+            <button
+              id="nav-tab-camera-plus"
+              aria-label="Create new clip"
+              onClick={onOpenStudio}
+              className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-700 via-indigo-600 to-purple-500 shadow-[0_0_12px_rgba(147,51,234,0.6)] border border-purple-300/30 flex items-center justify-center text-white active:scale-90 hover:brightness-110 transition cursor-pointer"
+              type="button"
+            >
+              <Plus className="w-5 h-5 stroke-[2.5]" />
+            </button>
+          </div>
+
+          {/* Tab 3: Seasons Hub */}
+          <button
+            id="nav-tab-seasons"
+            onClick={() => onTabChange('seasons')}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition group ${
+              activeTab === 'seasons'
+                ? 'text-purple-400 font-bold'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Trophy className="w-4 h-4 stroke-[2] group-hover:scale-110 transition-transform" />
+            <span className="text-[9px] font-medium mt-1 tracking-tight">
+              {t.seasons || 'Seasons'}
+            </span>
+          </button>
+
+          {/* Tab 4: Messages */}
+          <button
+            id="nav-tab-messages"
+            onClick={() => onTabChange('messages')}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition group relative ${
+              activeTab === 'messages'
+                ? 'text-purple-400 font-bold'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4 stroke-[2] group-hover:scale-110 transition-transform" />
+            <span className="text-[9px] font-medium mt-1 tracking-tight">
+              {t.messages || 'Messages'}
+            </span>
+          </button>
+
+          {/* Tab 5: Profile */}
+          <button
+            id="nav-tab-profile"
+            onClick={() => onTabChange('profile')}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition group ${
+              activeTab === 'profile'
+                ? 'text-purple-400 font-bold'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <UserIcon className="w-4 h-4 stroke-[2] group-hover:scale-110 transition-transform" />
+            <span className="text-[9px] font-medium mt-1 tracking-tight">
+              {t.profile || 'Profile'}
+            </span>
           </button>
         </div>
-
-        {/* 4. Five Seasons Tab */}
-        <button
-          id="nav-tab-seasons"
-          onClick={() => onTabChange('seasons')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${
-            activeTab === 'seasons'
-              ? 'text-amber-400 font-bold scale-105'
-              : 'text-white/40 hover:text-white/80'
-          }`}
-        >
-          <Trophy className={`w-5 h-5 ${activeTab === 'seasons' ? 'stroke-[2.5] text-amber-400' : 'stroke-[1.8]'}`} />
-          <span className="text-[10px] tracking-tight">{t.seasons}</span>
-        </button>
-
-        {/* 5. Messages Tab */}
-        <button
-          id="nav-tab-messages"
-          onClick={() => onTabChange('messages')}
-          className={`relative flex flex-col items-center justify-center gap-1 transition-all ${
-            activeTab === 'messages'
-              ? 'text-indigo-400 font-bold scale-105'
-              : 'text-white/40 hover:text-white/80'
-          }`}
-        >
-          <MessageSquare className={`w-5 h-5 ${activeTab === 'messages' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10px] tracking-tight">{t.messages}</span>
-        </button>
-
-        {/* 6. Profile Tab */}
-        <button
-          id="nav-tab-profile"
-          onClick={() => onTabChange('profile')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${
-            activeTab === 'profile'
-              ? 'text-indigo-400 font-bold scale-105'
-              : 'text-white/40 hover:text-white/80'
-          }`}
-        >
-          <UserIcon className={`w-5 h-5 ${activeTab === 'profile' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10px] tracking-tight">{t.profile}</span>
-        </button>
       </nav>
     </div>
   );

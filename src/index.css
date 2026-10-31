@@ -67,6 +67,20 @@
   box-shadow: 0 0 30px rgba(107, 33, 168, 0.3);
 }
 
+.video-viewport-bg {
+  background: linear-gradient(180deg, rgba(8,8,14,0.4) 0%, rgba(10,10,16,0.15) 30%, rgba(10,10,16,0.3) 70%, rgba(5,5,8,0.85) 100%),
+              radial-gradient(circle at 60% 45%, rgba(180, 160, 150, 0.28) 0%, rgba(45, 48, 55, 0.45) 50%, rgba(12, 12, 18, 0.95) 100%),
+              #1a1c23;
+}
+
+.glow-purple-sm {
+  box-shadow: 0 0 14px rgba(147, 51, 234, 0.45);
+}
+
+.glow-amber-sm {
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+}
+
 /* Artistic Flair Button & Glow */
 .btn-purple, .btn-space-primary {
   background: linear-gradient(135deg, #4f46e5 0%, #6b21a8 100%);

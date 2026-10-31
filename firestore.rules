@@ -29,14 +29,14 @@ service cloud.firestore {
 
     function isValidUserProfile(data) {
       return data.id is string &&
-             data.username is string && data.username.size() >= 3 && data.username.size() <= 50 &&
-             data.displayName is string && data.displayName.size() <= 100 &&
-             data.email is string && data.email.size() <= 200 &&
+             data.username is string && data.username.size() >= 1 && data.username.size() <= 60 &&
+             data.displayName is string && data.displayName.size() <= 150 &&
+             (!('email' in data) || data.email == null || (data.email is string && data.email.size() <= 200)) &&
              data.accountNumber is number &&
              data.pioneerTier is string &&
-             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500000)) &&
-             (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
-             (!('nameEditsCount' in data) || (data.nameEditsCount is number && data.nameEditsCount >= 0 && data.nameEditsCount <= 5));
+             (!('avatarUrl' in data) || data.avatarUrl == null || (data.avatarUrl is string && data.avatarUrl.size() <= 500000)) &&
+             (!('bio' in data) || data.bio == null || (data.bio is string && data.bio.size() <= 2000)) &&
+             (!('nameEditsCount' in data) || data.nameEditsCount == null || (data.nameEditsCount is number && data.nameEditsCount >= 0 && data.nameEditsCount <= 20));
     }
 
     function isValidClip(data) {
@@ -45,7 +45,7 @@ service cloud.firestore {
              data.mediaUrl is string &&
              data.mediaType in ['video', 'photo'] &&
              data.category is string &&
-             data.caption is string && data.caption.size() <= 1000;
+             (!('caption' in data) || data.caption == null || (data.caption is string && data.caption.size() <= 2000));
     }
 
     function isValidStory(data) {
@@ -57,14 +57,16 @@ service cloud.firestore {
              data.expiresAt is string;
     }
 
+    // Connection test probe
+    match /test/{docId} {
+      allow read: if true;
+    }
+
     // Users Collection
     match /users/{userId} {
       allow read: if true;
       allow create: if isOwner(userId) && isValidUserProfile(incoming());
-      allow update: if isOwner(userId) && isValidUserProfile(incoming()) && (
-        incoming().displayName == existing().displayName ||
-        (!('nameEditsCount' in incoming()) || incoming().nameEditsCount <= 5)
-      );
+      allow update: if isOwner(userId) && isValidUserProfile(incoming());
       allow delete: if false;
     }
 
@@ -72,8 +74,8 @@ service cloud.firestore {
     match /usernames/{username} {
       allow read: if true;
       allow create: if isSignedIn() && incoming().userId == request.auth.uid;
-      allow update: if isSignedIn() && existing().userId == request.auth.uid && incoming().userId == request.auth.uid;
-      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      allow update: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid) && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
     }
 
     // Clips Collection
@@ -82,7 +84,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && isValidClip(incoming());
       allow update: if isSignedIn() && (
         (isOwner(existing().userId) && isValidClip(incoming())) ||
-        incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'votesCount', 'sharesCount', 'commentsCount', 'reportsCount', 'reportedBy', 'isReported', 'moderationStatus', 'lastReportedAt', 'likedBy', 'votedBy'])
+        incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'votesCount', 'sharesCount', 'commentsCount', 'reportsCount', 'reportedBy', 'isReported', 'moderationStatus', 'lastReportedAt', 'likedBy', 'votedBy', 'user'])
       );
       allow delete: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
     }
@@ -98,8 +100,11 @@ service cloud.firestore {
     match /stories/{storyId} {
       allow read: if true;
       allow create: if isSignedIn() && isValidStory(incoming());
-      allow update: if isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['viewsCount', 'likesCount']);
-      allow delete: if isSignedIn() && isOwner(existing().userId);
+      allow update: if isSignedIn() && (
+        isOwner(existing().userId) ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['viewsCount', 'likesCount', 'user'])
+      );
+      allow delete: if isSignedIn() && (resource == null || isOwner(resource.data.userId));
     }
 
     // Comments Collection
@@ -107,7 +112,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isSignedIn() && incoming().userId == request.auth.uid;
       allow update: if isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['likes', 'isLiked', 'likedBy']);
-      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      allow delete: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
     }
 
     // User Search History Collection

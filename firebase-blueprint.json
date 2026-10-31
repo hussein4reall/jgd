@@ -104,6 +104,28 @@
         "status": { "type": "string", "maxLength": 50 }
       },
       "required": ["id", "clipId", "reporterId", "reason", "createdAt"]
+    },
+    "ClipComment": {
+      "title": "ClipComment",
+      "description": "Comment on a clip",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "clipId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "text": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "maxLength": 100 },
+        "likes": { "type": "number" }
+      },
+      "required": ["id", "clipId", "userId", "text", "createdAt"]
+    },
+    "SearchHistory": {
+      "title": "SearchHistory",
+      "description": "User recent searches",
+      "type": "object",
+      "properties": {
+        "recentSearches": { "type": "array" }
+      }
     }
   },
   "firestore": {
@@ -126,6 +148,14 @@
     "/stories/{storyId}": {
       "schema": "Story",
       "description": "Stores 24-hour stories published by users"
+    },
+    "/comments/{commentId}": {
+      "schema": "ClipComment",
+      "description": "Stores comments made on clips"
+    },
+    "/search_history/{userId}": {
+      "schema": "SearchHistory",
+      "description": "Stores user recent searches"
     },
     "/app_stats/{statId}": {
       "schema": "AppStats",

@@ -116,123 +116,144 @@ async function internalGetOrCreateUserProfile(
     fbUser.email?.toLowerCase() === 'std2025.hyousif@uowasit.edu.iq' ||
     Boolean(fbUser.email?.toLowerCase().includes('hyousif'));
 
+  let existingData: User | null = null;
   try {
     const userSnap = await getDoc(userRef);
-
     if (userSnap.exists()) {
-      const existingData = userSnap.data() as User;
+      existingData = userSnap.data() as User;
+    }
+  } catch (readErr) {
+    console.warn('User profile read notice:', readErr);
+  }
 
-      // Auto-healing logic:
-      // If the user is the founder, OR their account is #2 while being the sole user or there is no account #1:
-      // We automatically heal it back to Account #1 and Pioneer #1 (first_ever).
-      if (existingData.accountNumber !== 1) {
+  if (existingData) {
+    // Auto-healing logic:
+    // If the user is the founder and their account is not #1, heal it to #1.
+    if (isFounderEmail && existingData.accountNumber !== 1) {
+      try {
+        const repairedUser: User = {
+          ...existingData,
+          accountNumber: 1,
+          pioneerTier: 'first_ever',
+        };
+
+        await updateDoc(userRef, {
+          accountNumber: 1,
+          pioneerTier: 'first_ever',
+        });
+
         try {
-          const usersSnap = await getDocs(collection(db, 'users'));
-          const otherDocs = usersSnap.docs.filter((d) => d.id !== fbUser.uid);
-          const otherHasAccountOne = otherDocs.some((d) => (d.data() as User).accountNumber === 1);
+          const statsRef = doc(db, 'app_stats', 'counters');
+          await setDoc(
+            statsRef,
+            { totalRegisteredUsers: 1, lastUpdated: new Date().toISOString() },
+            { merge: true }
+          );
+        } catch {}
 
-          if (isFounderEmail || !otherHasAccountOne || otherDocs.length === 0) {
-            const repairedUser: User = {
-              ...existingData,
-              accountNumber: 1,
-              pioneerTier: 'first_ever',
-            };
-
-            await updateDoc(userRef, {
-              accountNumber: 1,
-              pioneerTier: 'first_ever',
-            });
-
-            const statsRef = doc(db, 'app_stats', 'counters');
-            await setDoc(
-              statsRef,
-              { totalRegisteredUsers: Math.max(1, usersSnap.size), lastUpdated: new Date().toISOString() },
-              { merge: true }
-            );
-
-            return repairedUser;
-          }
-        } catch (healErr) {
-          console.warn('Auto-repair account check error:', healErr);
-        }
+        return repairedUser;
+      } catch (healErr) {
+        console.warn('Founder auto-repair account notice:', healErr);
       }
-
-      return existingData;
     }
 
-    // Determine account number by inspecting real Firestore users collection
-    let accountNumber = 1;
+    return existingData;
+  }
 
-    if (isFounderEmail) {
-      accountNumber = 1;
-    } else {
-      try {
-        const usersSnap = await getDocs(collection(db, 'users'));
-        if (usersSnap.empty) {
+  // Determine account number by inspecting real Firestore users collection
+  let accountNumber = 1;
+
+  if (isFounderEmail) {
+    accountNumber = 1;
+  } else {
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      if (usersSnap.empty) {
+        accountNumber = 1;
+      } else {
+        const existingNumbers = usersSnap.docs
+          .map((d) => (d.data() as User).accountNumber)
+          .filter((n): n is number => typeof n === 'number' && !isNaN(n));
+        
+        if (!existingNumbers.includes(1)) {
           accountNumber = 1;
         } else {
-          const existingNumbers = usersSnap.docs
-            .map((d) => (d.data() as User).accountNumber)
-            .filter((n): n is number => typeof n === 'number' && !isNaN(n));
-          
-          if (!existingNumbers.includes(1)) {
-            accountNumber = 1;
-          } else {
-            const maxNumber = Math.max(0, ...existingNumbers);
-            accountNumber = maxNumber + 1;
-          }
+          const maxNumber = Math.max(0, ...existingNumbers);
+          accountNumber = maxNumber + 1;
         }
-      } catch (err) {
-        console.warn('Fallback getting users list for account number:', err);
-        accountNumber = 1;
       }
+    } catch (err) {
+      console.warn('Fallback getting users list for account number:', err);
+      accountNumber = 2;
     }
+  }
 
-    // Keep global counter in sync
-    try {
-      const statsRef = doc(db, 'app_stats', 'counters');
-      await setDoc(
-        statsRef,
-        { totalRegisteredUsers: accountNumber, lastUpdated: new Date().toISOString() },
-        { merge: true }
-      );
-    } catch {}
+  // Keep global counter in sync
+  try {
+    const statsRef = doc(db, 'app_stats', 'counters');
+    await setDoc(
+      statsRef,
+      { totalRegisteredUsers: accountNumber, lastUpdated: new Date().toISOString() },
+      { merge: true }
+    );
+  } catch {}
 
-    const tier: PioneerTierType = getPioneerTier(accountNumber);
-    const generatedUsername =
-      customUsername?.trim() ||
-      (fbUser.email
-        ? fbUser.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase()
-        : `pioneer_${accountNumber}`);
-    const finalDisplayName =
-      customDisplayName?.trim() || fbUser.displayName || generatedUsername;
-    const finalAvatar =
-      fbUser.photoURL ||
-      `https://api.dicebear.com/7.x/bottts/svg?seed=${generatedUsername}&backgroundColor=030307`;
+  const tier: PioneerTierType = getPioneerTier(accountNumber);
+  let cleanUsername = (
+    customUsername?.trim() ||
+    (fbUser.email
+      ? fbUser.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase()
+      : `pioneer_${accountNumber}`)
+  );
+  if (cleanUsername.length < 3) {
+    cleanUsername = `pioneer_${accountNumber}`;
+  }
+  if (cleanUsername.length > 30) {
+    cleanUsername = cleanUsername.slice(0, 30);
+  }
 
-    const newUser: User = {
-      id: fbUser.uid,
-      username: generatedUsername,
-      displayName: finalDisplayName,
-      email: fbUser.email || '',
-      avatarUrl: finalAvatar,
-      bio: 'Exploring 15-second clips and seasonal competitions.',
-      accountNumber,
-      registeredAt: new Date().toISOString(),
-      joinedDate: new Date().toISOString(),
-      pioneerTier: tier,
-      followersCount: 0,
-      followingCount: 0,
-      totalLikes: 0,
-      awardsWon: [],
-    };
+  const rawDisplayName = customDisplayName?.trim() || fbUser.displayName?.trim() || cleanUsername;
+  const finalDisplayName = (rawDisplayName || `Pioneer #${accountNumber}`).slice(0, 100);
+  const finalAvatar =
+    fbUser.photoURL ||
+    `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanUsername}&backgroundColor=030307`;
 
+  const newUser: User = {
+    id: fbUser.uid,
+    username: cleanUsername,
+    displayName: finalDisplayName,
+    email: (fbUser.email || '').slice(0, 200),
+    avatarUrl: finalAvatar,
+    bio: 'Exploring 15-second clips and seasonal competitions.',
+    accountNumber,
+    registeredAt: new Date().toISOString(),
+    joinedDate: new Date().toISOString(),
+    pioneerTier: tier,
+    followersCount: 0,
+    followingCount: 0,
+    totalLikes: 0,
+    awardsWon: [],
+    nameEditsCount: 0,
+  };
+
+  try {
     await setDoc(userRef, newUser);
-    return newUser;
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `users/${fbUser.uid}`);
     throw error;
   }
+
+  // Register username in uniqueness registry
+  try {
+    await setDoc(doc(db, 'usernames', cleanUsername), {
+      userId: fbUser.uid,
+      claimedAt: new Date().toISOString()
+    });
+  } catch (uErr) {
+    console.warn('Username registry claim notice:', uErr);
+  }
+
+  return newUser;
 }
 
 // Explicit helper to force reset/repair account #1 for the active user if needed
