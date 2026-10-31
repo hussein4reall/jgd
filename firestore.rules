@@ -1,0 +1,124 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    function isValidUserProfile(data) {
+      return data.id is string &&
+             data.username is string && data.username.size() >= 3 && data.username.size() <= 50 &&
+             data.displayName is string && data.displayName.size() <= 100 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.accountNumber is number &&
+             data.pioneerTier is string &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500000)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
+             (!('nameEditsCount' in data) || (data.nameEditsCount is number && data.nameEditsCount >= 0 && data.nameEditsCount <= 5));
+    }
+
+    function isValidClip(data) {
+      return data.id is string &&
+             data.userId == request.auth.uid &&
+             data.mediaUrl is string &&
+             data.mediaType in ['video', 'photo'] &&
+             data.category is string &&
+             data.caption is string && data.caption.size() <= 1000;
+    }
+
+    function isValidStory(data) {
+      return data.id is string &&
+             data.userId == request.auth.uid &&
+             data.mediaUrl is string &&
+             data.mediaType in ['video', 'photo'] &&
+             data.createdAt is string &&
+             data.expiresAt is string;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidUserProfile(incoming()) && (
+        incoming().displayName == existing().displayName ||
+        (!('nameEditsCount' in incoming()) || incoming().nameEditsCount <= 5)
+      );
+      allow delete: if false;
+    }
+
+    // Unique Username Registry Collection
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // Clips Collection
+    match /clips/{clipId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidClip(incoming());
+      allow update: if isSignedIn() && (
+        (isOwner(existing().userId) && isValidClip(incoming())) ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'votesCount', 'sharesCount', 'commentsCount', 'reportsCount', 'reportedBy', 'isReported', 'moderationStatus', 'lastReportedAt', 'likedBy', 'votedBy'])
+      );
+      allow delete: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+    }
+
+    // Reports Collection (Moderation)
+    match /reports/{reportId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().reporterId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Stories Collection
+    match /stories/{storyId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidStory(incoming());
+      allow update: if isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['viewsCount', 'likesCount']);
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
+
+    // Comments Collection
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['likes', 'isLiked', 'likedBy']);
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // User Search History Collection
+    match /search_history/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Global App Statistics & User Counters
+    match /app_stats/{statId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+  }
+}

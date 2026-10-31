@@ -1,0 +1,11 @@
+{
+  "name": "Remix Remix Five Seasons",
+  "description": "A premier space-themed 15-second video sharing platform celebrating five competitive creative seasons with horizontal swipe clips and pioneer rankings.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

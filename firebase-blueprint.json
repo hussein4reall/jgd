@@ -1,0 +1,135 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile data stored in Firestore",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "username": { "type": "string", "maxLength": 50 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 200 },
+        "avatarUrl": { "type": "string", "maxLength": 500000 },
+        "bio": { "type": "string", "maxLength": 500 },
+        "accountNumber": { "type": "number" },
+        "pioneerTier": { "type": "string", "maxLength": 50 },
+        "nameEditsCount": { "type": "number", "description": "Number of times the user changed their display name (max 5)" },
+        "registeredAt": { "type": "string", "maxLength": 100 },
+        "followersCount": { "type": "number" },
+        "followingCount": { "type": "number" },
+        "totalLikes": { "type": "number" }
+      },
+      "required": ["id", "username", "displayName", "email", "accountNumber", "pioneerTier"]
+    },
+    "Clip": {
+      "title": "Clip",
+      "description": "15-second seasonal clip or visual media",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "user": { "type": "object" },
+        "mediaUrl": { "type": "string", "maxLength": 500000 },
+        "mediaType": { "type": "string", "enum": ["video", "photo"] },
+        "caption": { "type": "string", "maxLength": 1000 },
+        "tags": { "type": "array" },
+        "category": { "type": "string", "maxLength": 50 },
+        "inCompetition": { "type": "boolean" },
+        "durationSeconds": { "type": "number" },
+        "likesCount": { "type": "number" },
+        "likedBy": { "type": "array" },
+        "votesCount": { "type": "number" },
+        "votedBy": { "type": "array" },
+        "sharesCount": { "type": "number" },
+        "commentsCount": { "type": "number" },
+        "reportsCount": { "type": "number" },
+        "reportedBy": { "type": "array" },
+        "isReported": { "type": "boolean" },
+        "moderationStatus": { "type": "string", "maxLength": 50 },
+        "lastReportedAt": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["id", "userId", "mediaUrl", "mediaType", "caption", "category", "createdAt"]
+    },
+    "Story": {
+      "title": "Story",
+      "description": "24-hour temporary story",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "user": { "type": "object" },
+        "mediaUrl": { "type": "string", "maxLength": 500000 },
+        "mediaType": { "type": "string", "enum": ["video", "photo"] },
+        "caption": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "maxLength": 100 },
+        "expiresAt": { "type": "string", "maxLength": 100 },
+        "viewsCount": { "type": "number" },
+        "likesCount": { "type": "number" }
+      },
+      "required": ["id", "userId", "mediaUrl", "mediaType", "createdAt", "expiresAt"]
+    },
+    "AppStats": {
+      "title": "AppStats",
+      "description": "Global statistics including user registration counts",
+      "type": "object",
+      "properties": {
+        "totalRegisteredUsers": { "type": "number" },
+        "lastUpdated": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["totalRegisteredUsers"]
+    },
+    "UsernameRecord": {
+      "title": "UsernameRecord",
+      "description": "Unique username claim document ensuring 1-to-1 mapping with accounts",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "claimedAt": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["userId"]
+    },
+    "ClipReport": {
+      "title": "ClipReport",
+      "description": "Moderation report filed by a user against a clip",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "clipId": { "type": "string", "maxLength": 128 },
+        "reporterId": { "type": "string", "maxLength": 128 },
+        "reportedUserId": { "type": "string", "maxLength": 128 },
+        "reason": { "type": "string", "maxLength": 50 },
+        "details": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "clipId", "reporterId", "reason", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user profile documents keyed by Firebase auth UID"
+    },
+    "/usernames/{username}": {
+      "schema": "UsernameRecord",
+      "description": "Global uniqueness registry mapping normalized username to account UID"
+    },
+    "/clips/{clipId}": {
+      "schema": "Clip",
+      "description": "Stores all clips published by platform users"
+    },
+    "/reports/{reportId}": {
+      "schema": "ClipReport",
+      "description": "Stores moderation reports filed by users"
+    },
+    "/stories/{storyId}": {
+      "schema": "Story",
+      "description": "Stores 24-hour stories published by users"
+    },
+    "/app_stats/{statId}": {
+      "schema": "AppStats",
+      "description": "Global app metadata and user counters"
+    }
+  }
+}
